@@ -1,0 +1,1 @@
+exploring Scala functional goodness
