@@ -18,25 +18,24 @@ class MonoidTest extends path.FunSpec with Matchers {
       mul should be(24)
     }
   }
-
-  describe("using monoird") {
-
-    trait Monoid {
-      def mzero: Int
-      def mappend(a: Int, b: Int): Int
-    }
-
-    object IntAddMonoid extends Monoid {
-      def mzero = 0
-      def mappend(a: Int, b: Int): Int = a + b
-    }
-
-    object IntMulMonoid extends Monoid {
-      def mzero = 1
-      def mappend(a: Int, b: Int): Int = a * b
-    }
-
+  describe("using monoid explicitly") {
     describe("we can separate the loop from the operations") {
+
+      trait Monoid {
+        def mzero: Int
+        def mappend(a: Int, b: Int): Int
+      }
+
+      object IntAddMonoid extends Monoid {
+        def mzero = 0
+        def mappend(a: Int, b: Int): Int = a + b
+      }
+
+      object IntMulMonoid extends Monoid {
+        def mzero = 1
+        def mappend(a: Int, b: Int): Int = a * b
+      }
+
       it("adds the same with monoid") {
         def plus(l: List[Int]) = {
           l.fold(IntAddMonoid.mzero)(IntAddMonoid.mappend)
@@ -50,8 +49,22 @@ class MonoidTest extends path.FunSpec with Matchers {
         mul(list) should be(24)
       }
     }
-
     describe("let's pass the monoid to the loop") {
+
+      trait Monoid {
+        def mzero: Int
+        def mappend(a: Int, b: Int): Int
+      }
+
+      object IntAddMonoid extends Monoid {
+        def mzero = 0
+        def mappend(a: Int, b: Int): Int = a + b
+      }
+
+      object IntMulMonoid extends Monoid {
+        def mzero = 1
+        def mappend(a: Int, b: Int): Int = a * b
+      }
 
       object IntOps {
         def op(l: List[Int])(m: Monoid): Int = {
@@ -64,22 +77,19 @@ class MonoidTest extends path.FunSpec with Matchers {
         IntOps.op(list)(IntMulMonoid) should be(24)
       }
     }
+  }
 
-    describe("we can generalize the type the Ops is working with") {
+  describe("using monoid implicitly") {
+    describe("monoid is bound to a specific type T") {
 
       trait SimpleMonoid[T] {
         def zero: T
         def append(a: T, b: T): T
       }
 
-      case class Add[T](numbers: T*)(implicit x: scala.math.Numeric[T]) {
-        def eval = numbers.reduceLeft(x.plus(_,_))
-      }
-
-
       trait SimpleAddMonoid[T] extends SimpleMonoid[T] {}
+      trait SimpleMultiplyMonoid[T] extends SimpleMonoid[T] {}
 
-      trait SimpleMulMonoid[T] extends SimpleMonoid[T] {}
 
       class AddIntMonoid extends SimpleAddMonoid[Int] {
         def zero = 0
@@ -91,20 +101,21 @@ class MonoidTest extends path.FunSpec with Matchers {
         def append(a: Double, b: Double): Double = a + b
       }
 
-      class MulIntMonoid extends SimpleMulMonoid[Int] {
+      class MultiplyIntMonoid extends SimpleMultiplyMonoid[Int] {
         def zero = 1
         def append(a: Int, b: Int): Int = a * b
       }
 
       implicit val addIntMonoid = new AddIntMonoid
-      implicit val mulIntMonoid = new MulIntMonoid
+      implicit val multiplyIntMonoid = new MultiplyIntMonoid
+
       implicit val addDoubleMonoid = new AddDoubleMonoid
 
       class MathOps[T] {
-        def plus(l: List[T])(implicit m: SimpleAddMonoid[T]) : T = {
+        def plus(l: List[T])(implicit m: SimpleAddMonoid[T]): T = {
           l.fold(m.zero)(m.append)
         }
-        def multiply(l: List[T])(implicit m: SimpleMulMonoid[T]): T = {
+        def multiply(l: List[T])(implicit m: SimpleMultiplyMonoid[T]): T = {
           l.fold(m.zero)(m.append)
         }
       }
@@ -122,6 +133,28 @@ class MonoidTest extends path.FunSpec with Matchers {
       def ld = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.3, 8.4, 9.3)
       it("MathOps will add a list of Doubles") {
         new MathOps().plus(ld) should be(46.0)
+      }
+    }
+
+    describe("monoid is genetic on type T") {
+      trait NumericMonoid[T] {
+        def zero(implicit n: Numeric[T])
+        def append(a: T, b: T)(implicit n: Numeric[T])
+      }
+
+      class AddMonoid[T] extends NumericMonoid[T] {
+        def zero(implicit n: Numeric[T]): T = n.zero
+        def append(a: T, b: T)(implicit n: Numeric[T]): T = n.plus(a, b)
+      }
+
+      class MathOps[T] {
+        def plus(l: List[T])(implicit m: AddMonoid[T]): T = {
+          l.fold(m.zero)(m.append)
+        }
+      }
+
+      it("MathOps will add a list of Integers") {
+        new MathOps().plus(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) should be(55)
       }
     }
   }
