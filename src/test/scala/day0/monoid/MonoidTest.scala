@@ -135,26 +135,29 @@ class MonoidTest extends path.FunSpec with Matchers {
         new MathOps().plus(ld) should be(46.0)
       }
     }
+    describe("monoid is generic on type T") {
 
-    describe("monoid is genetic on type T") {
       trait NumericMonoid[T] {
-        def zero(implicit n: Numeric[T])
-        def append(a: T, b: T)(implicit n: Numeric[T])
+        def zero(implicit n: Numeric[T]) : T
+        def append(a: T, b: T)(implicit n: Numeric[T]) : T
       }
 
-      class AddMonoid[T] extends NumericMonoid[T] {
-        def zero(implicit n: Numeric[T]): T = n.zero
-        def append(a: T, b: T)(implicit n: Numeric[T]): T = n.plus(a, b)
+      object NumericMonoid {
+        implicit def addMonoid[T] : NumericMonoid[T] = new NumericMonoid[T] {
+          override def append(a: T, b: T)(implicit n: Numeric[T]) = n.plus(a, b)
+          override def zero(implicit n: Numeric[T]) = n.zero
+        }
       }
 
-      class MathOps[T] {
-        def plus(l: List[T])(implicit m: AddMonoid[T]): T = {
+      // TODO: can I generalize this further to work with any numeric type?
+      object MathOps {
+        def plus(l: List[Int])(implicit m: NumericMonoid[Int])  = {
           l.fold(m.zero)(m.append)
         }
       }
 
       it("MathOps will add a list of Integers") {
-        new MathOps().plus(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) should be(55)
+        MathOps.plus(List(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)) should be(55)
       }
     }
   }
