@@ -32,9 +32,9 @@ class FoldLeftTest extends path.FunSpec with Matchers {
       FoldLeft.foldLeftList.fold(List(1, 6), 0, (a: Int, b: Int) => a + b)
     }
 
-    def sum[A: Monoid](xs: List[A]) : A = {
+    def sum[M[_] : FoldLeft, A: Monoid](xs: M[A]) : A = {
       val m = implicitly[Monoid[A]]
-      val foldOp = implicitly[FoldLeft[List]]
+      val foldOp = implicitly[FoldLeft[M]]
       foldOp.fold(xs, m.zero, m.append)
     }
 
