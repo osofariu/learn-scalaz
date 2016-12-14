@@ -151,7 +151,7 @@ class MonoidTest extends path.FunSpec with Matchers {
 
       // TODO: can I generalize this further to work with any numeric type?
       object MathOps {
-        def plus(l: List[Int])(implicit m: NumericMonoid[Int])  = {
+        def plus(l: List[Int])(implicit m: NumericMonoid[Int]): Int = {
           l.fold(m.zero)(m.append)
         }
       }
